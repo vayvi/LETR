@@ -6,13 +6,9 @@ modified based on https://github.com/facebookresearch/detr/blob/master/engine.py
 import math
 import os
 import sys
-from typing import Iterable
 import json
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import numpy as np
 import torch
-import datetime
 import util.misc as utils
 
 def train_one_epoch(model, criterion, postprocessors, data_loader, optimizer, device, epoch, max_norm, args):
@@ -82,7 +78,10 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
     header = 'Test:'
 
     id_to_img = {}
-    f = open(os.path.join(args.coco_path, "annotations", "lines_{}2017.json".format(args.dataset)))
+    if "synthetic" in args.coco_path:
+        f = open(os.path.join(args.coco_path, "annotations", "lines_{}.json".format(args.dataset)))
+    else:
+        f = open(os.path.join(args.coco_path, "annotations", "lines_{}2017.json".format(args.dataset)))
     data = json.load(f)
     for d in data['images']:
         id_to_img[d['id']] = d['file_name'].split('.')[0]
@@ -138,7 +137,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
             score_idx = np.argsort(-score)
             line = line[score_idx]
             score = score[score_idx]
-
+            
             os.makedirs(args.output_dir+'/benchmark' , exist_ok=True)
             if 'data/york_processed' in args.coco_path:
                 append_path = '/benchmark/benchmark_york_'+args.append_word
@@ -147,13 +146,22 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
                 curr_img_id = targets[0]['image_id'].tolist()[0]
                 np.savez(checkpoint_path.format(id_to_img[curr_img_id]),**{'lines': line, 'score':score})
             elif 'data/wireframe_processed' in args.coco_path:
+
                 append_path = '/benchmark/benchmark_val_'+args.append_word
                 os.makedirs(args.output_dir+append_path , exist_ok=True)
                 checkpoint_path = args.output_dir+append_path+'/{:08d}.npz'
                 curr_img_id = targets[0]['image_id'].tolist()[0]
                 np.savez(checkpoint_path.format(int(id_to_img[curr_img_id])),**{'lines': line, 'score':score})
+            elif 'data/synthetic_processed' in args.coco_path:
+                append_path = '/benchmark/benchmark_val_'+args.append_word
+                os.makedirs(args.output_dir+append_path , exist_ok=True)
+                curr_img_id = targets[0]['image_id'].tolist()[0]
+                checkpoint_path = args.output_dir+ append_path+f'/{id_to_img[curr_img_id]}.npz'
+
+                np.savez(checkpoint_path,**{'lines': line, 'score':score})   
             else:
-                assert False
+                raise Exception("evaluation dataset not recognized")
+ 
         num_images +=1
 
     # gather the stats from all processes
