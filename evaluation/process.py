@@ -17,19 +17,14 @@ Options:
 """
 
 import os
-import sys
-import shlex
 import pprint
 import random
 import os.path as osp
-import threading
-import subprocess
 
-import yaml
+
 import numpy as np
 import torch
 import matplotlib as mpl
-import skimage.io
 import matplotlib.pyplot as plt
 from docopt import docopt
 
