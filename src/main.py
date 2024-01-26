@@ -16,10 +16,19 @@ from datasets import build_dataset, get_coco_api_from_dataset
 from engine import evaluate, train_one_epoch
 from models import build_model
 from args import get_args_parser
+import wandb
 
 
 def main(args):
-    utils.init_distributed_mode(args)
+    """
+    
+"""
+    if args.wandb:
+        wandb.init(project=args.wandb_project, config=vars(args))
+    if args.eval:
+        args.distributed = False
+    else:
+        utils.init_distributed_mode(args)
     print("git:\n  {}\n".format(utils.get_sha()))
 
     output_dir = Path(args.output_dir)
@@ -65,7 +74,12 @@ def main(args):
         param_dicts, lr=args.lr, weight_decay=args.weight_decay
     )
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, args.lr_drop)
-
+    n_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    n_non_trainable_params = sum(
+        p.numel() for p in model.parameters() if not p.requires_grad
+    )
+    print(f"Number of trainable parameters: {n_trainable_params}")
+    print(f"Number of non-trainable parameters: {n_non_trainable_params}")
     if args.eval:
         dataset_val = build_dataset(image_set=args.dataset, args=args)
 
@@ -276,19 +290,28 @@ def main(args):
         )
 
         log_stats = {
-            **{f"train_{k}": format(v, ".6f") for k, v in train_stats.items()},
+            # **{f"train_{k}": format(v, ".6f") for k, v in train_stats.items()},
             **{f"test_{k}": format(v, ".6f") for k, v in test_stats.items()},
             "epoch": epoch,
             "n_parameters": n_parameters,
         }
 
-        if args.output_dir and utils.is_main_process():
+        if args.wandb:
+            log_stats_wandb = {
+                **{f"train_{k}": round(v, 6) for k, v in train_stats.items()},
+                **{f"test_{k}": round(v, 6) for k, v in test_stats.items()},
+                "epoch": epoch,
+            }
+
+            wandb.log(log_stats_wandb)
+        elif args.output_dir and utils.is_main_process():
             with (output_dir / "log.txt").open("a") as f:
                 f.write(json.dumps(log_stats) + "\n")
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print("Training time {}".format(total_time_str))
+    wandb.finish()
 
 
 if __name__ == "__main__":

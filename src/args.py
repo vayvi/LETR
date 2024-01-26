@@ -3,6 +3,9 @@ import argparse
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
+    parser.add_argument('--wandb', action="store_true", help="logs to wandb")
+    parser.add_argument('--wandb_project', type=str, default="LETR", help="wandb project name to log in to.")
+
     parser.add_argument('--lr', default=1e-4, type=float)
     parser.add_argument('--lr_backbone', default=1e-5, type=float)
     parser.add_argument('--batch_size', default=2, type=int)

@@ -1,4 +1,4 @@
-name: letr
+name: letr-test
 dependencies:
   - python=3.8
   - pytorch
