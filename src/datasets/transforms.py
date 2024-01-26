@@ -3,7 +3,7 @@ Transforms and data augmentation for both image + line.
 modfied based on https://github.com/facebookresearch/detr/blob/master/datasets/transforms.py
 """
 import random
-
+import matplotlib.pyplot as plt
 import PIL
 import torch
 import torchvision.transforms as T
@@ -17,8 +17,13 @@ import math
 
 from util.misc import interpolate
 import numpy as np
-
-def crop(image, target, region):
+def plot_lines(lines, ax):
+    for tp_id, line in enumerate(lines):
+        x1,y1, x2, y2 = line.numpy() # this is xyxy # TODO: check why the output of the network is inverted
+        p1 = (x1, y1)
+        p2 = (x2, y2)
+        ax.plot([p1[0], p2[0]], [p1[1], p2[1]], linewidth=1, color='red', zorder=1)
+def crop(image, target, region, plot_example=False):
     cropped_image = F.crop(image, *region)
 
     target = target.copy()
@@ -73,6 +78,11 @@ def crop(image, target, region):
         
     for field in fields:
         target[field] = target[field][keep]
+    if plot_example:
+        fig, axes = plt.subplots(1, 2)
+        axes[0].imshow(cropped_image.permute(1,2,0))
+        plot_lines(target["lines"], axes[1])
+        plt.show()
     return cropped_image, target
 
 
@@ -102,7 +112,7 @@ def vflip(image, target):
     if "lines" in target:
         lines = target["lines"]
 
-        # in dataset, we assume if two points with same x coord, we assume first point is the upper point
+        # in dataset, we assume if two points with same x coord, we assume first point is the upper point TODO: understand this
         lines = lines * torch.as_tensor([1, -1, 1, -1]) + torch.as_tensor([0, h, 0, h])
         vertical_line_idx = (lines[:, 0] == lines[:, 2])
         lines[vertical_line_idx] = torch.index_select(lines[vertical_line_idx], 1, torch.tensor([2,3,0,1]))

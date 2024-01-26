@@ -21,60 +21,22 @@ import numpy as np
 from docopt import docopt
 
 # import lcnn.utils
-
-
-def msTPFP(line_pred, line_gt, threshold):
-    diff = ((line_pred[:, None, :, None] - line_gt[:, None]) ** 2).sum(
-        -1
-    )  # are we permuting the lines to get
-    test_diff = (line_pred[:, None, :, None] - line_gt[:, None]) ** 2
-
-    diff = np.minimum(
-        diff[:, :, 0, 0] + diff[:, :, 1, 1], diff[:, :, 0, 1] + diff[:, :, 1, 0]
-    )
-
-    choice = np.argmin(diff, 1)
-
-    dist = np.min(diff, 1)
-
-    hit = np.zeros(len(line_gt), bool)
-    tp = np.zeros(len(line_pred), float)
-    fp = np.zeros(len(line_pred), float)
-    for i in range(len(line_pred)):
-        if dist[i] < threshold and not hit[choice[i]]:
-            hit[choice[i]] = True
-            tp[i] = 1
-        else:
-            fp[i] = 1
-    return tp, fp
-
-
-def ap(tp, fp):
-    recall = tp
-    precision = tp / np.maximum(tp + fp, 1e-9)  # FIXME: why is there a maximum?
-
-    recall = np.concatenate(([0.0], recall, [1.0]))
-    precision = np.concatenate(([0.0], precision, [0.0]))
-
-    for i in range(precision.size - 1, 0, -1):
-        precision[i - 1] = max(precision[i - 1], precision[i])
-    i = np.where(recall[1:] != recall[:-1])[0]
-    return np.sum((recall[i + 1] - recall[i]) * precision[i + 1])
-
-
-GT_val = "evaluation/data/wireframe/valid/*.npz"
-GT_train = "evaluation/data/wireframe/train/*_0_label.npz"
-
+import lcnn.metric
+root_path = "/home/kallelis/PrimitiveExtraction/PrimitiveExtraction/"
+GT_val = root_path + "Detection/LETR/data/synthetic_raw/labels/valid/*.npz"
+GT_train = root_path + "Detection/LETR/data/synthetic_raw/labels/train/*_0_label.npz"
 
 def line_score(path, threshold=5):
     preds = sorted(glob.glob(path))
 
-    if path.split("/")[-2].split("_")[1] == "train":
+    if path.split('/')[-2].split('_')[1] == 'train':
         print("######### Train #########")
         gts = sorted(glob.glob(GT_train))
         gts = gts[:501]
     else:
         gts = sorted(glob.glob(GT_val))
+
+
 
     n_gt = 0
     lcnn_tp, lcnn_fp, lcnn_scores = [], [], []
@@ -95,9 +57,12 @@ def line_score(path, threshold=5):
                 lcnn_line = lcnn_line[:i]
                 lcnn_score = lcnn_score[:i]
                 break
-
-        tp, fp = msTPFP(lcnn_line, gt_line, threshold)
-
+        print("##################")
+        print(len(lcnn_line))
+        print(lcnn_line.shape)
+        print("##################")
+        # exit()
+        tp, fp = lcnn.metric.msTPFP(lcnn_line, gt_line, threshold)
         lcnn_tp.append(tp)
         lcnn_fp.append(fp)
         lcnn_scores.append(lcnn_score)
@@ -109,7 +74,7 @@ def line_score(path, threshold=5):
     lcnn_tp = np.cumsum(lcnn_tp[lcnn_index]) / n_gt
     lcnn_fp = np.cumsum(lcnn_fp[lcnn_index]) / n_gt
 
-    return ap(lcnn_tp, lcnn_fp)
+    return lcnn.metric.ap(lcnn_tp, lcnn_fp)
 
 
 if __name__ == "__main__":
@@ -120,7 +85,7 @@ if __name__ == "__main__":
         return [100 * line_score(f"{path}/*.npz", t) for t in [5, 10, 15]]
 
     dirs = sorted(sum([glob.glob(p) for p in args["<path>"]], []))
-    results = [work(dirs[0])]
+    results = [work(dirs[0])]    
 
     # results = lcnn.utils.parmap(work, dirs)
 

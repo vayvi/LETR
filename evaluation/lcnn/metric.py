@@ -20,6 +20,7 @@ def ap(tp, fp):
     i = np.where(recall[1:] != recall[:-1])[0]
     return np.sum((recall[i + 1] - recall[i]) * precision[i + 1])
 
+
 def fscore(tp, fp):
     recall = tp
     precision = tp / np.maximum(tp + fp, 1e-9)
@@ -27,7 +28,13 @@ def fscore(tp, fp):
     recall = np.concatenate(([0.0], recall, [1.0]))
     precision = np.concatenate(([0.0], precision, [0.0]))
 
-    return (2 * np.array(precision) * np.array(recall) / (1e-9 + np.array(precision) + np.array(recall))).max()
+    return (
+        2
+        * np.array(precision)
+        * np.array(recall)
+        / (1e-9 + np.array(precision) + np.array(recall))
+    ).max()
+
 
 def APJ(vert_pred, vert_gt, max_distance, im_ids):
     if len(vert_pred) == 0:
@@ -109,8 +116,8 @@ def vectorized_wireframe_2d_metric(
     vert_pred = vert_pred[sorted_confidence, :-1]
     dpth_pred = dpth_pred[sorted_confidence]
     d = np.sqrt(
-        np.sum(vert_pred ** 2, 1)[:, None]
-        + np.sum(vert_gt ** 2, 1)[None, :]
+        np.sum(vert_pred**2, 1)[:, None]
+        + np.sum(vert_gt**2, 1)[None, :]
         - 2 * vert_pred @ vert_gt.T
     )
     choice = np.argmin(d, 1)
@@ -134,7 +141,7 @@ def vectorized_wireframe_2d_metric(
     n = max(np.sum(hit), 1)
     loss_L1 /= n
     loss_L2 /= n
-    loss_SIL = np.sum(SIL ** 2) / n - np.sum(SIL) ** 2 / (n * n)
+    loss_SIL = np.sum(SIL**2) / n - np.sum(SIL) ** 2 / (n * n)
 
     # staging 3: compute mAP for edge matching
     edgeset = set([frozenset(e) for e in edge_gt])
@@ -161,8 +168,8 @@ def vectorized_wireframe_3d_metric(
     vert_pred = np.hstack([vert_pred[:, :-1], dpth_pred[:, None]])[sorted_confidence]
     vert_gt = np.hstack([vert_gt[:, :-1], dpth_gt[:, None]])
     d = np.sqrt(
-        np.sum(vert_pred ** 2, 1)[:, None]
-        + np.sum(vert_gt ** 2, 1)[None, :]
+        np.sum(vert_pred**2, 1)[:, None]
+        + np.sum(vert_gt**2, 1)[None, :]
         - 2 * vert_pred @ vert_gt.T
     )
     choice = np.argmin(d, 1)

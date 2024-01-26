@@ -13,7 +13,6 @@ Options:
 """
 
 import os
-import sys
 import json
 from itertools import combinations
 
@@ -23,13 +22,6 @@ import skimage.draw
 import matplotlib.pyplot as plt
 from docopt import docopt
 from scipy.ndimage import zoom
-
-try:
-    sys.path.append(".")
-    sys.path.append("..")
-    from lcnn.utils import parmap
-except Exception:
-    raise
 
 
 def inrange(v, shape):
@@ -228,8 +220,8 @@ def main():
                 save_heatmap(f"{path}_3", im[::-1, ::-1], lines3)
             print("Finishing", os.path.join(data_output, batch, prefix))
 
-        parmap(handle, dataset, 16)
+        # parmap(handle, dataset, 16)
 
-
+        handle(dataset)
 if __name__ == "__main__":
     main()

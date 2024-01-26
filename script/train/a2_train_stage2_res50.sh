@@ -28,3 +28,5 @@ fi
 
 
 
+
+# python -m torch.distributed.launch --nproc_per_node=1 --use_env src/main.py --coco_path data/synthetic_processed --output_dir exp/res50_stage2_synthetic_3_epochs --LETRpost --backbone resnet50 --layer1_frozen --frozen_weights /home/kallelis/PrimitiveExtraction/PrimitiveExtraction/Detection/LETR/exp/res50_stage1/checkpoints/checkpoint0204.pth --batch_size 1 --epochs 3 --lr_drop 120 --num_queries 1000 --num_gpus 1 --wandb --save_freq 1

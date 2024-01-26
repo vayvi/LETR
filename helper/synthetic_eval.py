@@ -36,8 +36,7 @@ def save_heatmap(prefix, image, lines):
     im_rescale = (512, 512)
     heatmap_scale = (128, 128)
 
-    fy, fx = heatmap_scale[1] / \
-        image.shape[0], heatmap_scale[0] / image.shape[1]
+    fy, fx = heatmap_scale[1] / image.shape[0], heatmap_scale[0] / image.shape[1]
     jmap = np.zeros((1,) + heatmap_scale, dtype=np.float32)
     joff = np.zeros((1, 2) + heatmap_scale, dtype=np.float32)
     lmap = np.zeros(heatmap_scale, dtype=np.float32)
@@ -50,11 +49,11 @@ def save_heatmap(prefix, image, lines):
     jids = {}
 
     def jid(jun):
-        jun = tuple(jun[:2])
-        if jun in jids:
+        jun = tuple(jun[:2])  # (x,y)
+        if jun in jids: # if it already has an id, return it
             return jids[jun]
-        jids[jun] = len(junc)
-        junc.append(np.array(jun + (0,)))
+        jids[jun] = len(junc) # otherwise, create an id for it
+        junc.append(np.array(jun + (0,))) # add it to the list of junctions to update ids. 
         return len(junc) - 1
 
     lnid = []
@@ -80,8 +79,7 @@ def save_heatmap(prefix, image, lines):
             v0, v1 = junc[i0], junc[i1]
             vint0, vint1 = to_int(v0[:2] / 2), to_int(v1[:2] / 2)
             rr, cc, value = skimage.draw.line_aa(*vint0, *vint1)
-            lneg.append([v0, v1, i0, i1, np.average(
-                np.minimum(value, llmap[rr, cc]))])
+            lneg.append([v0, v1, i0, i1, np.average(np.minimum(value, llmap[rr, cc]))])
     if len(lneg) != 0:
         lneg.sort(key=lambda l: -l[-1])
         Lneg = np.array([l[2:4] for l in lneg][:4000], dtype=np.int16)
@@ -95,20 +93,6 @@ def save_heatmap(prefix, image, lines):
 
     image = cv2.resize(image, im_rescale)
 
-    # plt.subplot(131), plt.imshow(lmap)
-    # plt.subplot(132), plt.imshow(image)
-    # for i0, i1 in Lpos:
-    #     plt.scatter(junc[i0][1] * 4, junc[i0][0] * 4)
-    #     plt.scatter(junc[i1][1] * 4, junc[i1][0] * 4)
-    #     plt.plot([junc[i0][1] * 4, junc[i1][1] * 4], [junc[i0][0] * 4, junc[i1][0] * 4])
-    # plt.subplot(133), plt.imshow(lmap)
-    # for i0, i1 in Lneg[:150]:
-    #     plt.plot([junc[i0][1], junc[i1][1]], [junc[i0][0], junc[i1][0]])
-    # plt.show()
-
-    # For junc, lpos, and lneg that stores the junction coordinates, the last
-    # dimension is (y, x, t), where t represents the type of that junction.  In
-    # the wireframe dataset, t is always zero.
     np.savez_compressed(
         f"{prefix}_label.npz",
         aspect_ratio=image.shape[1] / image.shape[0],
@@ -127,63 +111,6 @@ def save_heatmap(prefix, image, lines):
     )
     cv2.imwrite(f"{prefix}.png", image)
 
-    # plt.imshow(jmap[0])
-    # plt.savefig("/tmp/1jmap0.jpg")
-    # plt.imshow(jmap[1])
-    # plt.savefig("/tmp/2jmap1.jpg")
-    # plt.imshow(lmap)
-    # plt.savefig("/tmp/3lmap.jpg")
-    # plt.imshow(Lmap[2])
-    # plt.savefig("/tmp/4ymap.jpg")
-    # plt.imshow(jwgt[0])
-    # plt.savefig("/tmp/5jwgt.jpg")
-    # plt.cla()
-    # plt.imshow(jmap[0])
-    # for i in range(8):
-    #     plt.quiver(
-    #         8 * jmap[0] * cdir[i] * np.cos(2 * math.pi / 16 * i),
-    #         8 * jmap[0] * cdir[i] * np.sin(2 * math.pi / 16 * i),
-    #         units="xy",
-    #         angles="xy",
-    #         scale_units="xy",
-    #         scale=1,
-    #         minlength=0.01,
-    #         width=0.1,
-    #         zorder=10,
-    #         color="w",
-    #     )
-    # plt.savefig("/tmp/6cdir.jpg")
-    # plt.cla()
-    # plt.imshow(lmap)
-    # plt.quiver(
-    #     2 * lmap * np.cos(ldir),
-    #     2 * lmap * np.sin(ldir),
-    #     units="xy",
-    #     angles="xy",
-    #     scale_units="xy",
-    #     scale=1,
-    #     minlength=0.01,
-    #     width=0.1,
-    #     zorder=10,
-    #     color="w",
-    # )
-    # plt.savefig("/tmp/7ldir.jpg")
-    # plt.cla()
-    # plt.imshow(jmap[1])
-    # plt.quiver(
-    #     8 * jmap[1] * np.cos(tdir),
-    #     8 * jmap[1] * np.sin(tdir),
-    #     units="xy",
-    #     angles="xy",
-    #     scale_units="xy",
-    #     scale=1,
-    #     minlength=0.01,
-    #     width=0.1,
-    #     zorder=10,
-    #     color="w",
-    # )
-    # plt.savefig("/tmp/8tdir.jpg")
-
 
 def main():
     args = docopt(__doc__)
@@ -198,8 +125,7 @@ def main():
             dataset = json.load(f)
 
         def handle(data):
-            im = cv2.imread(os.path.join(
-                data_root, "images", data["filename"]))
+            im = cv2.imread(os.path.join(data_root, "images", data["filename"]))
             prefix = data["filename"].split(".")[0]
             lines = np.array(data["lines"]).reshape(-1, 2, 2)
             os.makedirs(os.path.join(data_output, batch), exist_ok=True)
@@ -216,7 +142,7 @@ def main():
             path = os.path.join(data_output, batch, prefix)
             save_heatmap(f"{path}_0", im[::, ::], lines0)
             if batch != "valid":
-
+                # TODO: why do they do this for inverted lines as well
                 save_heatmap(f"{path}_1", im[::, ::-1], lines1)
                 save_heatmap(f"{path}_2", im[::-1, ::], lines2)
                 save_heatmap(f"{path}_3", im[::-1, ::-1], lines3)
@@ -225,5 +151,7 @@ def main():
         # parmap(handle, dataset, 16)
         for data in dataset:
             handle(data)
+
+
 if __name__ == "__main__":
     main()
